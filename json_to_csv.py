@@ -11,21 +11,17 @@ logging.basicConfig(
 )
 
 fields = {
-    "name": "ime",
+    "object_price": "cena",
     "object_brand": "marka",
     "object_model": "model",
     "object_production_year": "godina proizvodnje",
-    "object_price": "cena",
-    "object_chassis": "karoserija",
-    "object_condition": "stanje",
-    "object_production_year": "godina proizvodnje",
-    "object_damage": "oštećen",
     "object_mileage": "kilometraža",
-    "object_door_num": "broj vrata",
+    "object_chassis": "karoserija",
     "object_fuel": "gorivo",
     "object_engine_volume": "kubikaža",
-    "object_engine_horsepower": "konjskih snaga",
+    "object_engine_horsepower": "snaga motora",
     "object_gear_box": "menjač",
+    "object_door_num": "broj vrata",
     "object_air_conditioner": "klima",
 }
 
