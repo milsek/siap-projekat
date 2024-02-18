@@ -18,8 +18,18 @@ class DataLoader:
         return data
 
     def remove_outliers(self, data):
-        data = data[data["godina proizvodnje"] >= 1985]
-        data = data[data["kilometraža"] < 400_000]
+        data = data[data["godina proizvodnje"] >= 2002]
+        data = data.drop(data[(data['godina proizvodnje'] <= 2005) & (data['cena'] > 5000)].index)
+        data = data.drop(data[(data['godina proizvodnje'] <= 2007) & (data['cena'] > 7500)].index)
+        data = data.drop(data[(data['godina proizvodnje'] >= 2010) & (data['cena'] < 4000)].index)
+        data = data.drop(data[(data['godina proizvodnje'] >= 2015) & (data['cena'] < 7000)].index)
+        data = data.drop(data[(data['godina proizvodnje'] >= 2019) & (data['cena'] < 12000)].index)
+        data = data.drop(data[(data['snaga motora'] > 200) & (data['cena'] < 3000)].index)
+        data = data.drop(data[(data['snaga motora'] > 250) & (data['cena'] < 3500)].index)
+        data = data.drop(data[(data['snaga motora'] > 300) & (data['cena'] < 6500)].index)
+        data = data[data["kilometraža"] < 375000]
+        data = data.drop(data[(data['kilometraža'] > 250000) & (data['cena'] > 20000)].index)
+        data = data.drop(data[(data['kilometraža'] > 200000) & (data['cena'] > 25000)].index)
         data = data[np.abs(stats.zscore(data["cena"])) <= 3]
         return data
 
@@ -30,7 +40,6 @@ class DataLoader:
 
         data.drop("kubikaža", axis=1, inplace=True)
         data.drop("model", axis=1, inplace=True)
-        data.drop("klima", axis=1, inplace=True)
         data.drop("broj vrata", axis=1, inplace=True)
         data.drop("gorivo", axis=1, inplace=True)
 
@@ -44,21 +53,27 @@ class DataLoader:
             encoded_transmission = pd.get_dummies(
                 data["menjač"], prefix="menjač"
             ).reindex(columns=self.columns_transmission, fill_value=0)
+            encoded_ac = pd.get_dummies(
+                data["klima"], prefix="klima"
+            ).reindex(columns=self.columns_ac, fill_value=0)
         else:
             encoded_make = pd.get_dummies(data["marka"], prefix="marka")
             encoded_body = pd.get_dummies(data["karoserija"], prefix="karoserija")
             encoded_transmission = pd.get_dummies(data["menjač"], prefix="menjač")
+            encoded_ac = pd.get_dummies(data["klima"], prefix="klima")
             self.columns_make = encoded_make.columns
             self.columns_body = encoded_body.columns
             self.columns_transmission = encoded_transmission.columns
+            self.columns_ac = encoded_ac.columns
 
         df_encoded = pd.concat(
-            [data, encoded_body, encoded_make, encoded_transmission], axis=1
+            [data, encoded_body, encoded_make, encoded_transmission, encoded_ac], axis=1
         )
 
         df_encoded.drop(["marka"], axis=1, inplace=True)
         df_encoded.drop(["karoserija"], axis=1, inplace=True)
         df_encoded.drop(["menjač"], axis=1, inplace=True)
+        df_encoded.drop(["klima"], axis=1, inplace=True)
         data = df_encoded
         return data
 
