@@ -8,7 +8,7 @@ from xgboost import XGBRegressor
 from scipy import stats
 
 import winsound
-from colorama import Fore, Back, Style
+from colorama import Fore, Style
 
 
 class DataLoader:
@@ -25,22 +25,25 @@ class DataLoader:
     def remove_outliers(self, data):
         data = data[data["godina proizvodnje"] >= 2002]
         data = data.drop(
-            data[(data["godina proizvodnje"] <= 2005) & (data["cena"] > 6000)].index
+            data[(data["godina proizvodnje"] <= 2005) & (data["cena"] > 10000)].index
         )
         data = data.drop(
-            data[(data["godina proizvodnje"] <= 2007) & (data["cena"] > 11000)].index
+            data[(data["godina proizvodnje"] <= 2007) & (data["cena"] > 20000)].index
         )
         data = data.drop(
-            data[(data["godina proizvodnje"] <= 2010) & (data["cena"] > 15000)].index
+            data[(data["godina proizvodnje"] <= 2010) & (data["cena"] > 22000)].index
         )
         data = data.drop(
-            data[(data["godina proizvodnje"] >= 2010) & (data["cena"] < 4000)].index
+            data[(data["godina proizvodnje"] >= 2010) & (data["cena"] < 2000)].index
         )
         data = data.drop(
-            data[(data["godina proizvodnje"] >= 2015) & (data["cena"] < 7000)].index
+            data[(data["godina proizvodnje"] >= 2015) & (data["cena"] < 4000)].index
         )
         data = data.drop(
-            data[(data["godina proizvodnje"] >= 2019) & (data["cena"] < 12000)].index
+            data[(data["godina proizvodnje"] >= 2017) & (data["cena"] < 6000)].index
+        )
+        data = data.drop(
+            data[(data["godina proizvodnje"] >= 2019) & (data["cena"] < 8000)].index
         )
         data = data.drop(
             data[(data['snaga motora'] >= 175) & (data['cena'] < 2000)].index
@@ -59,15 +62,14 @@ class DataLoader:
         )
         data = data[data["kilometraža"] < 375000]
         data = data.drop(
-            data[(data["kilometraža"] > 350000) & (data["cena"] > 25000)].index
+            data[(data["kilometraža"] > 300000) & (data["cena"] > 30000)].index
         )
         data = data.drop(
-            data[(data["kilometraža"] > 300000) & (data["cena"] > 35000)].index
+            data[(data['kilometraža'] > 325000) & (data['cena'] > 25000)].index
         )
         data = data.drop(
-            data[(data['kilometraža'] > 325000) & (data['cena'] > 37000)].index
+            data[(data["kilometraža"] > 350000) & (data["cena"] > 20000)].index
         )
-        data = data[np.abs(stats.zscore(data["cena"])) <= 3]
         return data
 
     def preprocess(self, data, train):
