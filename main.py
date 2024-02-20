@@ -259,7 +259,6 @@ def main():
 
     print("Fitting XGBRegressor model...")
     # Best parameters for XGBoost: {'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 1000, 'subsample': 0.9}
-    # MAE for XGBoost regressor: 1693.20137255967
     # xgboost_grid_search = get_xgboost_best_estimator(X_train, Y_train)
     # xgboost_regressor = xgboost_grid_search.best_estimator_
     xgboost_regressor = XGBRegressor(n_estimators=1000, max_depth=5, learning_rate=0.1, subsample=0.9, random_state=0)
