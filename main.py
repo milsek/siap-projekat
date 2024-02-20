@@ -7,6 +7,9 @@ from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
 from scipy import stats
 
+import winsound
+from colorama import Fore, Back, Style
+
 
 class DataLoader:
     def __init__(self, path):
@@ -40,6 +43,9 @@ class DataLoader:
             data[(data["godina proizvodnje"] >= 2019) & (data["cena"] < 12000)].index
         )
         data = data.drop(
+            data[(data['snaga motora'] >= 175) & (data['cena'] < 2000)].index
+        )
+        data = data.drop(
             data[(data["snaga motora"] >= 200) & (data["cena"] < 3000)].index
         )
         data = data.drop(
@@ -57,6 +63,9 @@ class DataLoader:
         )
         data = data.drop(
             data[(data["kilometraža"] > 300000) & (data["cena"] > 35000)].index
+        )
+        data = data.drop(
+            data[(data['kilometraža'] > 325000) & (data['cena'] > 37000)].index
         )
         data = data[np.abs(stats.zscore(data["cena"])) <= 3]
         return data
@@ -154,10 +163,11 @@ def get_elastic_net_best_estimator(X_train, Y_train):
 
 def get_random_forest_best_estimator(X_train, Y_train):
     random_forest_param_grid = {
-        "n_estimators": [225, 250, 275],
-        "max_depth": [None],
-        "min_samples_split": [5, 10],
-        "min_samples_leaf": [1],
+        'n_estimators': [225, 250, 275],
+        'max_depth': [None, 10, 15],
+        'min_samples_split': [10, 20],
+        'min_samples_leaf': [1, 3, 5],
+        'max_features': ['sqrt', 'log2', None],
     }
     random_forest_regressor = RandomForestRegressor(random_state=0)
     random_forest_grid_search = GridSearchCV(
@@ -165,12 +175,33 @@ def get_random_forest_best_estimator(X_train, Y_train):
         random_forest_param_grid,
         cv=5,
         scoring="neg_mean_absolute_error",
-        verbose=1,
+        verbose=2,
     )
     random_forest_grid_search.fit(X_train, Y_train)
     print("Best parameters for Random Forest:", random_forest_grid_search.best_params_)
-
     return random_forest_grid_search
+
+
+def get_xgboost_best_estimator(X_train, Y_train):
+    xgboost_param_grid = {
+        "n_estimators": [100, 200, 300, 1000],
+        "learning_rate": [0.01, 0.05, 0.1, 0.15],
+        "max_depth": [3, 4, 5, 6, 7],
+        "subsample": [0.8, 0.9, 1.0],
+    }
+
+    xgboost_regressor = XGBRegressor(random_state=0, verbosity=1)
+    xgboost_grid_search = GridSearchCV(
+        xgboost_regressor,
+        xgboost_param_grid,
+        cv=5,
+        scoring="neg_mean_absolute_error",
+        verbose=2,
+    )
+    xgboost_grid_search.fit(X_train, Y_train)
+    print("Best parameters for XGBoost:", xgboost_grid_search.best_params_)
+
+    return xgboost_grid_search
 
 
 def prep_data_for_test(data_loader, X_val):
@@ -192,31 +223,6 @@ def test(regressor, X_val, Y_val, label):
     print(f"MAE for {label}: {mae}")
 
 
-def get_xgboost_best_estimator(X_train, Y_train):
-    xgboost_param_grid = {
-        "n_estimators": [100, 200, 300, 1000],
-        "learning_rate": [0.01, 0.05, 0.1, 0.15],
-        "max_depth": [3, 4, 5, 6, 7],
-        "subsample": [0.8, 0.9, 1.0],
-    }
-
-    # Best parameters for XGBoost: {'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 1000, 'subsample': 0.9}
-    # MAE for XGBoost regressor: 1693.20137255967
-
-    xgboost_regressor = XGBRegressor(random_state=0, verbosity=1)
-    xgboost_grid_search = GridSearchCV(
-        xgboost_regressor,
-        xgboost_param_grid,
-        cv=5,
-        scoring="neg_mean_absolute_error",
-        verbose=2,
-    )
-    xgboost_grid_search.fit(X_train, Y_train)
-    print("Best parameters for XGBoost:", xgboost_grid_search.best_params_)
-
-    return xgboost_grid_search
-
-
 def main():
     data_loader = DataLoader("vehicles/vehicles.csv")
     data = data_loader.load_data()
@@ -229,29 +235,50 @@ def main():
     X_train = train_data.drop("cena", axis=1)
     Y_train = train_data["cena"]
 
+    print(Fore.GREEN + "Fitting ElasticNet model...")
     # Best: alpha 0.0005, l1 0.05
     # elastic_net_grid_search = get_elastic_net_best_estimator(X_train, Y_train)
     # elastic_net_regressor = elastic_net_grid_search.best_estimator_
-    # elastic_net_regressor = ElasticNet(alpha=0.0005, l1_ratio=0.05, random_state=0)
+    elastic_net_regressor = ElasticNet(alpha=0.0005, l1_ratio=0.05, random_state=0)
+    elastic_net_regressor.fit(X_train, Y_train)
+    print("ElasticNet model fitted successfully.")
 
+    print('-------------------------------')
+
+    print("Fitting RandomForestRegressor model...")
+    # Best: n_estimators 275, max_depth: None (default), min_samples_leaf 1 (default), max_features None (default), min_samples_split 10
     # random_forest_grid_search = get_random_forest_best_estimator(X_train, Y_train)
     # random_forest_regressor = random_forest_grid_search.best_estimator_
-    # random_forest_regressor = RandomForestRegressor(random_state=0)
+    random_forest_regressor = RandomForestRegressor(n_estimators= 275, min_samples_split=10, random_state=0)
+    random_forest_regressor.fit(X_train, Y_train)
+    print("RandomForestRegressor model fitted successfully.")
+
+    print('-------------------------------')
+
+    print("Fitting XGBRegressor model...")
+    # Best parameters for XGBoost: {'learning_rate': 0.1, 'max_depth': 5, 'n_estimators': 1000, 'subsample': 0.9}
+    # MAE for XGBoost regressor: 1693.20137255967
+    # xgboost_grid_search = get_xgboost_best_estimator(X_train, Y_train)
+    # xgboost_regressor = xgboost_grid_search.best_estimator_
+    xgboost_regressor = XGBRegressor(n_estimators=1000, max_depth=5, learning_rate=0.1, subsample=0.9, random_state=0)
+    xgboost_regressor.fit(X_train, Y_train)
+    print("XGBRegressor model fitted successfully.")
+    
+    print(Style.RESET_ALL)
 
     # cross_validate(X_train, Y_train, elastic_net_regressor)
     # cross_validate(X_train, Y_train, random_forest_regressor)
-
-    xgboost_grid_search = get_xgboost_best_estimator(X_train, Y_train)
-    xgboost_regressor = xgboost_grid_search.best_estimator_
+    # cross_validate(X_train, Y_train, xgboost_regressor)
 
     test_data = data_loader.preprocess(test_data, False)
     x_test = test_data.drop("cena", axis=1)
     y_test = test_data["cena"]
 
     x_test = prep_data_for_test(data_loader, x_test)
-    # test(elastic_net_regressor, x_test, y_test, label='Elastic net regressor')
-    # test(random_forest_regressor, x_test, y_test, label="Random forest regressor")
+    test(elastic_net_regressor, x_test, y_test, label='Elastic net regressor')
+    test(random_forest_regressor, x_test, y_test, label='Random forest regressor')
     test(xgboost_regressor, x_test, y_test, label="XGBoost regressor")
+    winsound.Beep(880, 450)
 
 
 if __name__ == "__main__":
